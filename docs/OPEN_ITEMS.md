@@ -41,3 +41,15 @@ smoke 的 Gold 一题已经输出 extracted_final_answer/reasoning/correct/confi
 ## 新 profile 验证中（2026-10-14）
 
 `examples/profile.hle_ws64k.json` 提议上下文65536、xgrammar服务级空白限制。作答16384、Judge8192、并发1不变。客户端新增两个结构化输出字段的argv/startup日志核验；31项单元测试通过。服务由仓库外的操作者脚本启动。真实重放、全数据tokenization及补充小样本尚待完成；不能将配置存在视为修复已通过。
+
+## 第二轮已验证事实（2026-10-14，补充小样本仍在执行）
+
+新服务真实启动完成，客户端20项配置均由实际argv与startup日志核验通过，包括xgrammar和disable_any_whitespace=True。原始失败Judge请求保持不变，重放后stop正常结束，130个输出token、完整官方schema JSON；旧8192截断记录保留。单题成功不保证全量无截断。
+
+全部1811题已通过服务端/tokenize预检，包含全部图片和实际chat template：最大solver输入16466，加16384输出预算为32850；Judge空回答模板token数加两阶段预算的最大投影38381。新max_model_len=65536覆盖上述预算。Judge投影不是实际生成回答重新分词后的精确上界；服务不会静默裁切输入，真实错误仍保留。
+
+11题补充验证覆盖Gold/Revision、文字/图片、exactMatch/multipleChoice，并包含三道长题。只有全部solver请求成功且Judge完整JSON有效才允许顺序启动Gold668、Revision1143全量；solver length允许但单独统计。全量两份报告分别封存，不能合并当官方成绩。并发1、solver16384、judge8192，零自动重试，strict_json不变。
+
+远程执行由仓库外campaign脚本编排，客户端不管理服务。项目只保存在本地和远程工作副本，未发布GitHub。
+
+本轮目录：`/root/runs/hle-verified/hle-ws64k-campaign-20261014T063659Z`；状态见目录内 `STATUS`。编排日志：`/root/runs/hle-verified/campaign_ws64k.log`。此文档仅记录检查时状态，不代表全量已完成。
