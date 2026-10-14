@@ -61,6 +61,18 @@ class ConfigCheckTests(unittest.TestCase):
         r = config_check.verify(PROFILE, argv, None, None)
         self.assertEqual(r["fields"]["enable_prefix_caching"]["status"], "mismatch")
 
+    def test_structured_output_receipt_requires_observed_setting(self):
+        profile = {"expect": {"structured_outputs_backend": "xgrammar",
+                              "structured_outputs_disable_any_whitespace": True}}
+        argv = ["--structured-outputs-config", json.dumps({"backend": "xgrammar", "disable_any_whitespace": True})]
+        log = "structured_outputs_config=StructuredOutputsConfig(backend='xgrammar', disable_any_whitespace=True)"
+        result = config_check.verify(profile, argv, log)
+        self.assertEqual(len(result["verified"]), 2)
+        bad = config_check.verify(profile, argv, log.replace("=True", "=False"))
+        self.assertFalse(bad["ok"])
+        self.assertEqual(config_check.verify(profile, argv)["argv_only"], list(profile["expect"]))
+        self.assertFalse(config_check.verify(profile, ["--dtype", "bfloat16"], log)["ok"])
+
     def test_load_argv_formats(self):
         with tempfile.TemporaryDirectory() as d:
             nul = Path(d) / "cmdline"

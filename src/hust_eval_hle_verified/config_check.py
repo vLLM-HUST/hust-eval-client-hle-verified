@@ -63,6 +63,7 @@ def _int(v, default=None):
 def effective_from_argv(args: List[str]) -> Dict[str, Any]:
     d = parse_flags(args)
     comp = json.loads(d["compilation-config"]) if isinstance(d.get("compilation-config"), str) else {}
+    structured = json.loads(d["structured-outputs-config"]) if isinstance(d.get("structured-outputs-config"), str) else {}
     sizes = d.get("cudagraph-capture-sizes")
     if sizes is None:
         sizes = comp.get("cudagraph_capture_sizes")
@@ -71,6 +72,8 @@ def effective_from_argv(args: List[str]) -> Dict[str, Any]:
     sizes = [int(x) for x in sizes] if sizes is not None else None
     spec = json.loads(d["speculative-config"]) if isinstance(d.get("speculative-config"), str) else None
     return {
+        "structured_outputs_backend": structured.get("backend"),
+        "structured_outputs_disable_any_whitespace": structured.get("disable_any_whitespace"),
         "dtype": d.get("dtype"),
         "tensor_parallel_size": _int(d.get("tensor-parallel-size"), 1),
         "pipeline_parallel_size": _int(d.get("pipeline-parallel-size"), 1),
@@ -93,6 +96,8 @@ def effective_from_argv(args: List[str]) -> Dict[str, Any]:
 
 
 _LOG_PATTERNS = {
+    "structured_outputs_backend": [r"structured_outputs_config=StructuredOutputsConfig\(backend='([^']+)'"],
+    "structured_outputs_disable_any_whitespace": [r"structured_outputs_config=StructuredOutputsConfig\([^\n)]*?disable_any_whitespace=(True|False)"],
     "dtype": [r"\bdtype=(?:torch\.)?(\w+)"],
     "tensor_parallel_size": [r"\btensor_parallel_size=(\d+)"],
     "pipeline_parallel_size": [r"\bpipeline_parallel_size=(\d+)"],
@@ -113,7 +118,7 @@ _LOG_PATTERNS = {
     "cudagraph_capture_sizes": [r"\bcudagraph_capture_sizes\W{1,4}\[([\d,\s]+)\]"],
     "speculative_config": [r"\bspeculative_config=(\S+?)[,)]"],
 }
-_BOOL_KEYS = ("enable_expert_parallel", "disable_custom_all_reduce", "enable_prefix_caching",
+_BOOL_KEYS = ("structured_outputs_disable_any_whitespace", "enable_expert_parallel", "disable_custom_all_reduce", "enable_prefix_caching",
               "enable_chunked_prefill", "enforce_eager")
 _INT_KEYS = ("tensor_parallel_size", "pipeline_parallel_size", "data_parallel_size", "max_model_len",
              "max_num_seqs", "max_num_batched_tokens", "decode_context_parallel_size", "compilation_mode")

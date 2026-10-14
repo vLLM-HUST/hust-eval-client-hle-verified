@@ -37,3 +37,7 @@ smoke 的 Gold 一题已经输出 extracted_final_answer/reasoning/correct/confi
 
 远程客户端和基础功能验证已完成。没有启动1811题全量，没有提交成绩 PR。
 本次四题专门选每个子集/模态中最短输入，只用于功能验证，不能外推模型准确率、截断比例或全量时长。
+
+## 新 profile 验证中（2026-10-14）
+
+`examples/profile.hle_ws64k.json` 提议上下文65536、xgrammar服务级空白限制。作答16384、Judge8192、并发1不变。客户端新增两个结构化输出字段的argv/startup日志核验；31项单元测试通过。服务由仓库外的操作者脚本启动。真实重放、全数据tokenization及补充小样本尚待完成；不能将配置存在视为修复已通过。
