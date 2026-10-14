@@ -57,3 +57,7 @@ smoke 的 Gold 一题已经输出 extracted_final_answer/reasoning/correct/confi
 ## 用户切换到并发4（2026-10-14）
 
 并发1全量在Gold完成21条作答时停止，保留为未完成运行；不作为全量成绩。新的solver.c4.json和judge.c4.json均设concurrency=4，其他请求参数保持不变。沿用同一运行中的服务，Gold和Revision均用新计划从头运行，不混合旧结果。图文bench仍排在全部准确率测试完成后。最新运行目录由远程 `/root/runs/hle-verified/CURRENT_CAMPAIGN` 指向。
+
+## 用户切换到并发16（2026-10-14，替代并发4）
+
+并发4在Gold完成13条作答后按用户要求停止，保留未完成记录。新solver.c16.json和judge.c16.json仅将客户端并发改为16，其余参数不变；新计划从头运行Gold/Revision，不混合旧结果。沿用同一服务及其max_num_seqs=16。后续文本/图片四组bench仍在全部准确率完成后执行。
