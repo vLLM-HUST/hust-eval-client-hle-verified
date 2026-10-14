@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hust-eval-client-hle-verified"
+version = "0.1.0"
+description = "HLE-Verified solver, Qwen judge, benchmark and evidence client"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+hust-eval-hle-verified = "hust_eval_hle_verified.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
