@@ -53,3 +53,7 @@ smoke 的 Gold 一题已经输出 extracted_final_answer/reasoning/correct/confi
 远程执行由仓库外campaign脚本编排，客户端不管理服务。项目只保存在本地和远程工作副本，未发布GitHub。
 
 本轮目录：`/root/runs/hle-verified/hle-ws64k-campaign-20261014T063659Z`；状态见目录内 `STATUS`。编排日志：`/root/runs/hle-verified/campaign_ws64k.log`。此文档仅记录检查时状态，不代表全量已完成。
+
+## 用户切换到并发4（2026-10-14）
+
+并发1全量在Gold完成21条作答时停止，保留为未完成运行；不作为全量成绩。新的solver.c4.json和judge.c4.json均设concurrency=4，其他请求参数保持不变。沿用同一运行中的服务，Gold和Revision均用新计划从头运行，不混合旧结果。图文bench仍排在全部准确率测试完成后。最新运行目录由远程 `/root/runs/hle-verified/CURRENT_CAMPAIGN` 指向。
