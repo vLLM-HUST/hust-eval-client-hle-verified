@@ -49,3 +49,5 @@ python3 -m venv .venv
 - `seal evidence / table / seal final / seal check`：证据 → 结果表 → manifest 的非循环绑定。
 
 代码和证据必须固定后再全量。修改任何核心模块后，旧 plan 拒绝继续执行；应使用归档源码或新建 plan。
+
+图文压测及封存结果导入步骤见 [docs/BENCH.md](docs/BENCH.md)。

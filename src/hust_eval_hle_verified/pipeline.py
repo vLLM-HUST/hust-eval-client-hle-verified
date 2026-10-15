@@ -494,7 +494,16 @@ def add_commands(sub):
     s=cmd('materialize',materialize)
     s.add_argument('--plan',required=True); s.add_argument('--output',required=True); s.add_argument('--sample',type=int)
     from .bench import bench
-    s=cmd('bench',lambda a:bench(a.run_dir,a.name,a.dataset,a.base_url,a.served_model,a.tokenizer,a.num_prompts,a.output_len,a.vllm_bin,a.dry_run))
+    s=cmd('bench',lambda a:bench(a.run_dir,a.name,a.dataset,a.base_url,a.served_model,a.tokenizer,a.num_prompts,a.output_len,a.vllm_bin,a.dry_run,a.modality,a.input_manifest))
     for name in ('run-dir','name','dataset','base-url','served-model','tokenizer'): s.add_argument('--'+name,required=True)
     s.add_argument('--num-prompts',type=int,default=200); s.add_argument('--output-len',type=int,default=256)
     s.add_argument('--vllm-bin',default='vllm'); s.add_argument('--dry-run',action='store_true')
+
+    s.add_argument('--modality', choices=['text','image'], default='text')
+    s.add_argument('--input-manifest')
+    from .bench_inputs import materialize_sealed
+    s=cmd('bench-materialize',lambda a:materialize_sealed(a.accuracy_run,a.output,a.modality,a.sample))
+    s.add_argument('--accuracy-run',required=True)
+    s.add_argument('--output',required=True)
+    s.add_argument('--modality',choices=['text','image'],required=True)
+    s.add_argument('--sample',type=int)
