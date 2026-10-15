@@ -1,63 +1,39 @@
-# 全量前待解决项
+# 已知限制与后续改进
 
-## 1. Qwen Judge 的结构化 JSON 空白循环（真实 smoke 已复现）
+截至2026-10-15：65536上下文和服务级xgrammar空白限制已验证；Gold668、Revision1143全量与四组bench已完成。 原来的“全量未启动”状态已过期。历史过程保留在
+Git 提交及运行证据中。
 
-smoke 的 Gold 一题已经输出 extracted_final_answer/reasoning/correct/confidence，但在最后 strict 字段的冒号后不断生成制表符，达到8192 token。
-严格 JSON 解析正确地将其标记 invalid_judge，没有把残缺 JSON 中出现的 correct 当成完整判决。
+## Judge 仍可能截断
 
-已审阅当前服务端安装源码：
-- /vllm-workspace/vllm/vllm/sampling_params.py 定义了请求字段 disable_any_whitespace。
-- v1/structured_output/backend_xgrammar.py 与 backend_guidance.py 实际读取的是服务级 structured_outputs_config.disable_any_whitespace。
-- 因此不能仅向客户端请求添加同名字段并宣称已修复。
+最初 smoke 的一题在 strict 字段后循环生成空白到8192 token。安装版本的结构化输出后端读取服务级
+`structured_outputs_config.disable_any_whitespace`；仅在客户端请求中加入同名字段不能保证生效。
+操作者在客户端之外启动新服务，开启xgrammar与disable_any_whitespace后，原失败请求重放正常stop，
+130个输出token、完整JSON。这个单题修复不能证明所有重复生成已解决。
 
-候选服务级配置（**未启动、未验证的新 profile**）：
-```json
-{"backend":"xgrammar","disable_any_whitespace":true}
-```
-对应 structured_outputs_config。需要操作者外部启动服务时配置；本客户端不启动服务、不改服务源码。
-应新建 profile 和 fresh startup/effective receipt，重放失败样本并补充多题 Judge 验证；保留原始提示词和 response_format schema。
-这只是候选修复，尚无开启该选项后的真实验证结果。
+并发16全量仍有Gold32、Revision40条Judge输出在8192上限截断。按冻结strict_json规则均未判定，
+保留全部题目分母，不补分、不重试。需要提高评分可靠性时，应单独定义新profile/预算/模型并复测， 保留本次原始结果。不能把72条未判定说成72条已确认错误。
 
-## 2. 长题的 Judge 上下文预算
+## 作答截断较多
 
-当前 max_model_len=32768、solver max_tokens=16384、judge max_tokens=8192。
-按原始题干、参考答案与固定 Judge 模板计算，以下 Revision 题在作答用满上限时可能超上下文：
+Gold383、Revision688条solver输出达到16384上限，仍将原始正文交给Judge。 该限制会影响结果解读；不能仅凭提高并发就保证准确率不变。复测要保持数据、提示词和取分口径，
+明确改变的输出预算或服务配置，并另行冻结证据。
 
-| case_id | 不含作答/chat template 的 Judge 文本 token | 加两阶段上限后的估计 |
-|---|---:|---:|
-| revision-6720241e20239af7af582ae1 | 9910 | 34486 |
-| revision-67228ecf93273f2ea4d39e3e | 10366 | 34942 |
-| revision-672cba8ce9bdca604f9e0c12 | 13793 | 38369 |
+## 上下文预算不是一次检查后永久保证
 
-这是规划上界估计，不代表这三题实际一定失败。图像展开与 chat template 还需单独计入。
-选择更大的服务上下文，或明确较小的作答/Judge预算并固定 profile；不能静默截掉题目、参考答案或模型回答。
-全量前需用真实请求 tokenization 再检查边界。
+原32768服务对部分长题不够。当前65536服务完成了1811题tokenization预检：最大solver输入16466，
+加16384预算为32850；Judge空回答模板加两阶段预算最大投影38381。 Judge投影不是实际回答重新分词后的精确上界。不同模型、模板、图片处理或预算必须重新预检；
+不允许静默裁切题目、参考答案或模型回答来绕过上下文不足。
 
-## 当前状态
+## 证据和可复现性边界
 
-远程客户端和基础功能验证已完成。没有启动1811题全量，没有提交成绩 PR。
-本次四题专门选每个子集/模态中最短输入，只用于功能验证，不能外推模型准确率、截断比例或全量时长。
+- 完整权重未哈希；模型小文件和权重文件清单不能证明全权重字节或预期revision一致。
+- 容器镜像digest未取得时必须标记未知；不能从镜像名称或版本文字反推digest。
+- 旧计划严格绑定核心源码；恢复历史计划应使用原提交。新bench输入可显式从已封存结果导入。
+- 图片bench默认的文本长度估算不足以报告完整输入token；核对实际usage和服务端tokenization。
+- 当前性能数据是复用服务、预检/smoke后的单次测量，不是冷缓存或三次重复正式验收。
 
-## 新 profile 验证中（2026-10-14）
+## 尚未实现
 
-`examples/profile.hle_ws64k.json` 提议上下文65536、xgrammar服务级空白限制。作答16384、Judge8192、并发1不变。客户端新增两个结构化输出字段的argv/startup日志核验；31项单元测试通过。服务由仓库外的操作者脚本启动。真实重放、全数据tokenization及补充小样本尚待完成；不能将配置存在视为修复已通过。
-
-## 第二轮已验证事实（2026-10-14，补充小样本仍在执行）
-
-新服务真实启动完成，客户端20项配置均由实际argv与startup日志核验通过，包括xgrammar和disable_any_whitespace=True。原始失败Judge请求保持不变，重放后stop正常结束，130个输出token、完整官方schema JSON；旧8192截断记录保留。单题成功不保证全量无截断。
-
-全部1811题已通过服务端/tokenize预检，包含全部图片和实际chat template：最大solver输入16466，加16384输出预算为32850；Judge空回答模板token数加两阶段预算的最大投影38381。新max_model_len=65536覆盖上述预算。Judge投影不是实际生成回答重新分词后的精确上界；服务不会静默裁切输入，真实错误仍保留。
-
-11题补充验证覆盖Gold/Revision、文字/图片、exactMatch/multipleChoice，并包含三道长题。只有全部solver请求成功且Judge完整JSON有效才允许顺序启动Gold668、Revision1143全量；solver length允许但单独统计。全量两份报告分别封存，不能合并当官方成绩。并发1、solver16384、judge8192，零自动重试，strict_json不变。
-
-远程执行由仓库外campaign脚本编排，客户端不管理服务。项目只保存在本地和远程工作副本，未发布GitHub。
-
-本轮目录：`/root/runs/hle-verified/hle-ws64k-campaign-20261014T063659Z`；状态见目录内 `STATUS`。编排日志：`/root/runs/hle-verified/campaign_ws64k.log`。此文档仅记录检查时状态，不代表全量已完成。
-
-## 用户切换到并发4（2026-10-14）
-
-并发1全量在Gold完成21条作答时停止，保留为未完成运行；不作为全量成绩。新的solver.c4.json和judge.c4.json均设concurrency=4，其他请求参数保持不变。沿用同一运行中的服务，Gold和Revision均用新计划从头运行，不混合旧结果。图文bench仍排在全部准确率测试完成后。最新运行目录由远程 `/root/runs/hle-verified/CURRENT_CAMPAIGN` 指向。
-
-## 用户切换到并发16（2026-10-14，替代并发4）
-
-并发4在Gold完成13条作答后按用户要求停止，保留未完成记录。新solver.c16.json和judge.c16.json仅将客户端并发改为16，其余参数不变；新计划从头运行Gold/Revision，不混合旧结果。沿用同一服务及其max_num_seqs=16。后续文本/图片四组bench仍在全部准确率完成后执行。
+- calibration_error：所固定上游实现存在末bin覆盖及小样本问题。暂不输出该指标，保留confidence； 后续须明确公式和版本，再加入实现及验证。
+- 自动服务部署/启动/停止不是本客户端职责，不作为待补功能。
+- 未发布PyPI包；GitHub源码仓库可安装使用。
